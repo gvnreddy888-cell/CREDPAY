@@ -41,7 +41,7 @@ variables:
 
   # Terraform remote state backend
   tfStateRG: 'CREDRG123'
-  tfStateStorage: 'toragecred'
+  tfStateStorage: 'storagecred'
   tfStateContainer: 'statefile111'
   tfStateKey: 'credpay.terraform.tfstate'
 
