@@ -40,9 +40,9 @@ variables:
   paymentRepository: 'credpay/payment-service'
 
   # Terraform remote state backend
-  tfStateRG: 'CredPayRG'
-  tfStateStorage: 'credpaysas1'
-  tfStateContainer: 'statefile'
+  tfStateRG: 'CREDRG123'
+  tfStateStorage: 'toragecred'
+  tfStateContainer: 'statefile111'
   tfStateKey: 'credpay.terraform.tfstate'
 
   # AKS cluster - deterministic names from terraform/main.tf's
