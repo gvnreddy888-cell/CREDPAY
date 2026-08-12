@@ -188,20 +188,20 @@ of what Terraform itself manages (so you can't accidentally destroy your
 own state backend with `terraform destroy`).
 
 ```powershell
-az group create --name <STATE_RG> --location <LOCATION>
+az group create --name CREDRG123--location canadacentral
 
 
 
 az storage account create `
-  --name <STATE_STORAGE> `
-  --resource-group <STATE_RG> `
-  --location <LOCATION> `
+  --name storagecred `
+  --resource-group CREDRG123 `
+  --location canadacentral `
   --sku Standard_LRS `
   --encryption-services blob
 
 az storage container create `
-  --name statefile `
-  --account-name <STATE_STORAGE> `
+  --name statefile111 `
+  --account-name storagecred `
   --auth-mode login
 ```
 
@@ -212,8 +212,8 @@ live. Also created out-of-band, same reasoning as above.
 
 ```powershell
 az acr create `
-  --name <ACR_NAME> `
-  --resource-group <STATE_RG> `
+  --name credacr11 `
+  --resource-group CREDRG123 `
   --sku Basic
 ```
 
@@ -228,9 +228,9 @@ pipeline to read back later. Also created out-of-band.
 
 ```powershell
 az keyvault create `
-  --name <KV_NAME> `
-  --resource-group <STATE_RG> `
-  --location <LOCATION> `
+  --name credkeyvalut11 `
+  --resource-group CREDRG123 `
+  --location  canadacentral `
   --enable-rbac-authorization true
 ```
 

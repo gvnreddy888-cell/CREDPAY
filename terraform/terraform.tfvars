@@ -9,7 +9,7 @@
 # =====================================================================
 
 # Azure Subscription ID
-subscription_id = "eb2e4db4-1889-4351-9b48-102efd8a3a57"
+subscription_id = "511cc037-b418-42a0-b749-9598ba1ae942"
 
 # Azure Region
 location = "canadacentral"
@@ -23,8 +23,7 @@ postgres_subnet_prefix = "10.0.16.0/24"
 node_count     = 2
 node_min_count = 2
 node_max_count = 2
-vm_size        = "Standard_B2s"
-
+vm_size = "Standard_B1s"
 # ----- PostgreSQL -----
 postgres_version        = "16"
 postgres_admin_username = "credpayadmin"
@@ -34,5 +33,5 @@ database_name           = "credpay"
 log_retention_days = 30
 
 # ----- Key Vault (created out-of-band, in the CredProj bootstrap RG - see backend.tf) -----
-key_vault_name                = "credpaykvs1"
-key_vault_resource_group_name = "CredPayRG"
+key_vault_name                = "credkeyvalut11"
+key_vault_resource_group_name = "CREDRG123"
