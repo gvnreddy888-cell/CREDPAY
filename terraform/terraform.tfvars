@@ -23,7 +23,7 @@ postgres_subnet_prefix = "10.0.16.0/24"
 node_count     = 2
 node_min_count = 2
 node_max_count = 2
-vm_size = "Standard_D4as_v5"
+vm_size = "Standard_D4s_v4"
 # ----- PostgreSQL -----
 postgres_version        = "16"
 postgres_admin_username = "credpayadmin"
