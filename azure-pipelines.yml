@@ -265,13 +265,15 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          set -e
+          set -euo pipefail
+          az account set --subscription "$(azureSubscriptionId)"
           az aks get-credentials \
-            --resource-group $(aksResourceGroup) \
-            --name $(aksClusterName) \
+            --resource-group "$(aksResourceGroup)" \
+            --name "$(aksClusterName)" \
+            --subscription "$(azureSubscriptionId)" \
             --admin \
             --overwrite-existing
-          kubectl get nodes
+          kubectl get nodes -o wide
 
     #########################################################
     # Attach ACR to AKS - grants the kubelet identity AcrPull so pods can
@@ -370,21 +372,21 @@ stages:
     # `--dry-run=client -o yaml | kubectl apply -f -` makes this
     # create-or-update, so it is safe to run on every pipeline run.
     #########################################################
-    # - task: AzureCLI@2
-    #   displayName: Create or Update Kubernetes Secret
-    #   inputs:
-    #     azureSubscription: $(azureServiceConnection)
-    #     scriptType: bash
-    #     scriptLocation: inlineScript
-    #     inlineScript: |
-    #       set -e
-    #       kubectl create secret generic credpay-db \
-    #         --namespace $(k8sNamespace) \
-    #         --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-    #         --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-    #         --dry-run=client -o yaml | kubectl apply -f -
-    #   env:
-    #     DB_PASSWORD: $(postgres-password)
+    - task: AzureCLI@2
+      displayName: Create or Update Kubernetes Secret
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -e
+          kubectl create secret generic credpay-db \
+            --namespace $(k8sNamespace) \
+            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+            --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
+            --dry-run=client -o yaml | kubectl apply -f -
+      env:
+        DB_PASSWORD: $(postgres-password)
 
     #########################################################
     # Database Schema Job - Jobs are immutable, so delete any previous
@@ -400,17 +402,146 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          set -e
+          set -euo pipefail
+
+          echo "=================================================="
+          echo "DATABASE SCHEMA JOB"
+          echo "=================================================="
+
+          echo "Azure account:"
+          az account show \
+            --query "{Subscription:id,Name:name,Tenant:tenantId,UserType:user.type}" \
+            -o table
+
+          echo ""
+          echo "Kubernetes context:"
+          kubectl config current-context
+
+          echo ""
+          echo "AKS nodes:"
+          kubectl get nodes -o wide
+
+          echo ""
+          echo "Checking namespace: $(k8sNamespace)"
+          if ! kubectl get namespace "$(k8sNamespace)" >/dev/null 2>&1; then
+            echo "Namespace does not exist. Creating it..."
+            kubectl create namespace "$(k8sNamespace)"
+          else
+            echo "Namespace already exists."
+          fi
+
+          echo ""
+          echo "Checking database secret..."
+          if ! kubectl get secret credpay-db -n "$(k8sNamespace)" >/dev/null 2>&1; then
+            echo "ERROR: credpay-db secret does not exist."
+            kubectl get secrets -n "$(k8sNamespace)" || true
+            exit 1
+          fi
+          echo "credpay-db secret exists."
+
+          echo ""
+          echo "Checking schema.sql..."
+          if [ ! -f "schema.sql" ]; then
+            echo "ERROR: schema.sql was not found."
+            echo "Current directory:"
+            pwd
+            echo "Repository files:"
+            find . -maxdepth 3 -type f | sort | head -200
+            exit 1
+          fi
+          echo "schema.sql found."
+          wc -c schema.sql
+
+          echo ""
+          echo "Creating/updating db-schema ConfigMap..."
           kubectl create configmap db-schema \
-            --namespace $(k8sNamespace) \
-            --from-file=schema.sql=schema.sql \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --namespace "$(k8sNamespace)" \
+            --from-file=schema.sql=./schema.sql \
+            --dry-run=client \
+            -o yaml \
+            | kubectl apply -f -
 
-          kubectl delete job db-schema-init -n $(k8sNamespace) --ignore-not-found
+          echo ""
+          echo "Deleting previous immutable Job..."
+          kubectl delete job db-schema-init \
+            --namespace "$(k8sNamespace)" \
+            --ignore-not-found \
+            --wait=true
 
+          echo ""
+          echo "Checking schema Job manifest..."
+          if [ ! -f "k8s/postgres/schema-init-job.yaml" ]; then
+            echo "ERROR: k8s/postgres/schema-init-job.yaml was not found."
+            find k8s -maxdepth 3 -type f | sort
+            exit 1
+          fi
+
+          echo "Applying database schema Job..."
           kubectl apply -f k8s/postgres/schema-init-job.yaml
-          kubectl wait --for=condition=complete job/db-schema-init -n $(k8sNamespace) --timeout=120s
-          kubectl logs job/db-schema-init -n $(k8sNamespace)
+
+          echo ""
+          echo "Job status:"
+          kubectl get job db-schema-init \
+            --namespace "$(k8sNamespace)" \
+            -o wide
+
+          echo ""
+          echo "Waiting for database schema Job..."
+          if kubectl wait \
+              --for=condition=complete \
+              job/db-schema-init \
+              --namespace "$(k8sNamespace)" \
+              --timeout=300s; then
+
+            echo "Database schema Job completed successfully."
+
+          else
+            echo "=================================================="
+            echo "DATABASE SCHEMA JOB FAILED"
+            echo "=================================================="
+
+            echo "Job description:"
+            kubectl describe job db-schema-init \
+              --namespace "$(k8sNamespace)" || true
+
+            echo ""
+            echo "Job pods:"
+            kubectl get pods \
+              --namespace "$(k8sNamespace)" \
+              -l job-name=db-schema-init \
+              -o wide || true
+
+            for POD in $(kubectl get pods \
+              --namespace "$(k8sNamespace)" \
+              -l job-name=db-schema-init \
+              -o jsonpath='{.items[*].metadata.name}'); do
+
+              echo "------------------------------------------"
+              echo "POD: $POD"
+              echo "------------------------------------------"
+
+              kubectl describe pod "$POD" \
+                --namespace "$(k8sNamespace)" || true
+
+              echo "Container logs:"
+              kubectl logs "$POD" \
+                --namespace "$(k8sNamespace)" \
+                --all-containers=true \
+                --tail=200 || true
+            done
+
+            exit 1
+          fi
+
+          echo ""
+          echo "Database schema Job logs:"
+          kubectl logs job/db-schema-init \
+            --namespace "$(k8sNamespace)" \
+            --all-containers=true
+
+          echo "=================================================="
+          echo "DATABASE SCHEMA JOB SUCCESS"
+          echo "=================================================="
 
     #########################################################
     # User Service - Rolling Update (unchanged strategy)
