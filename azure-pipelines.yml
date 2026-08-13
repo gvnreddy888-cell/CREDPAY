@@ -24,7 +24,7 @@ pool:
 variables:
 
   # Azure service connections
-  acrServiceConnection: 'Dockercredacr11'
+  acrServiceConnection: 'DOCKERACR111'
   azureServiceConnection: 'HdfcManual1'
 
   # ACR resource name (not the service connection name above) - needed for
