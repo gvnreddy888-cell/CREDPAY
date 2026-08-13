@@ -47,15 +47,15 @@ variables:
 
   # AKS cluster - deterministic names from terraform/main.tf's
   # name_prefix = "credpay" (rg-credpay / aks-credpay)
-  aksResourceGroup: 'rg-credpays143'
-  aksClusterName: 'aks-credpays143'
-  k8sNamespace: 'credpay12'
+  aksResourceGroup: 'rg-credpays1435'
+  aksClusterName: 'aks-credpays1435'
+  k8sNamespace: 'credpay125'
 
   # Azure Key Vault - created out-of-band (like the ACR), in the CredProj
   # bootstrap RG (same RG as the Terraform state storage account, not
   # rg-credpay). Terraform writes the Postgres secrets into it; the
   # pipeline reads them back below.
-  keyVaultName: 'credkeyvalut11'
+  keyVaultName: 'credkeyvalut111'
   keyVaultResourceGroup: 'CREDRG123'
 
 # =========================================================

@@ -228,7 +228,7 @@ pipeline to read back later. Also created out-of-band.
 
 ```powershell
 az keyvault create `
-  --name credkeyvalut11 `
+  --name credkeyvalut111 `
   --resource-group CREDRG123 `
   --location  canadacentral `
   --enable-rbac-authorization true
