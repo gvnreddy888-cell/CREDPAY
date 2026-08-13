@@ -278,18 +278,18 @@ stages:
     # pull images with no imagePullSecrets. Idempotent: safe to re-run
     # every deployment, only ever changes anything the very first time.
     #########################################################
-    - task: AzureCLI@2
-      displayName: Attach ACR to AKS
-      inputs:
-        azureSubscription: $(azureServiceConnection)
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          az aks update \
-            --resource-group $(aksResourceGroup) \
-            --name $(aksClusterName) \
-            --attach-acr $(acrName)
+    # - task: AzureCLI@2
+    #   displayName: Attach ACR to AKS
+    #   inputs:
+    #     azureSubscription: $(azureServiceConnection)
+    #     scriptType: bash
+    #     scriptLocation: inlineScript
+    #     inlineScript: |
+    #       set -e
+    #       az aks update \
+    #         --resource-group $(aksResourceGroup) \
+    #         --name $(aksClusterName) \
+    #         --attach-acr $(acrName)
 
     #########################################################
     # Ensure the ingress-nginx controller is installed - required for the
