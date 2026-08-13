@@ -547,18 +547,34 @@ stages:
     # User Service - Rolling Update (unchanged strategy)
     #########################################################
     - task: AzureCLI@2
-      displayName: Deploy User Service
-      inputs:
-        azureSubscription: $(azureServiceConnection)
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          kubectl apply -f k8s/user-service/
-          kubectl rollout restart deployment/user-service -n $(k8sNamespace)
-          kubectl rollout status deployment/user-service -n $(k8sNamespace) --timeout=180s
-          kubectl get pods -n $(k8sNamespace) -l app.kubernetes.io/name=user-service
+  displayName: Deploy User Service
+  inputs:
+    azureSubscription: $(azureServiceConnection)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      set -e
 
+      az aks get-credentials \
+        --resource-group $(aksResourceGroup) \
+        --name $(aksClusterName) \
+        --admin \
+        --overwrite-existing
+
+      kubectl apply -f k8s/user-service/ \
+        -n $(k8sNamespace)
+
+      kubectl rollout restart deployment/user-service \
+        -n $(k8sNamespace)
+
+      kubectl rollout status deployment/user-service \
+        -n $(k8sNamespace) \
+        --timeout=300s
+
+      kubectl get pods \
+        -n $(k8sNamespace) \
+        -l app.kubernetes.io/name=user-service \
+        -o wide
     #########################################################
     # Payment Service - Rolling Update (unchanged strategy)
     #########################################################
