@@ -239,7 +239,6 @@ stages:
     azureSubscriptionId: '511cc037-b418-42a0-b749-9598ba1ae942'
     aksResourceGroup: 'rg-credpays1234'
     aksClusterName: 'aks-credpays1234'
-    
 
 
   jobs:
@@ -372,48 +371,20 @@ stages:
     # create-or-update, so it is safe to run on every pipeline run.
     #########################################################
     - task: AzureCLI@2
-  displayName: Create or Update Kubernetes Secret
-  inputs:
-    azureSubscription: $(azureServiceConnection)
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      set -euo pipefail
-
-      echo "Checking Kubernetes context..."
-      kubectl config current-context
-
-      echo "Checking AKS nodes..."
-      kubectl get nodes
-
-      echo "Checking namespace..."
-
-      if ! kubectl get namespace "$(k8sNamespace)" >/dev/null 2>&1; then
-        echo "Namespace $(k8sNamespace) does not exist. Creating it..."
-        kubectl create namespace "$(k8sNamespace)"
-      else
-        echo "Namespace $(k8sNamespace) already exists."
-      fi
-
-      echo "Creating/updating credpay-db secret..."
-
-      kubectl create secret generic credpay-db \
-        --namespace "$(k8sNamespace)" \
-        --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-        --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-        --dry-run=client \
-        -o yaml \
-        | kubectl apply -f -
-
-      echo "Verifying secret..."
-
-      kubectl get secret credpay-db \
-        --namespace "$(k8sNamespace)"
-
-      echo "Kubernetes secret created/updated successfully."
-
-  env:
-    DB_PASSWORD: $(postgres-password)
+      displayName: Create or Update Kubernetes Secret
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -e
+          kubectl create secret generic credpay-db \
+            --namespace $(k8sNamespace) \
+            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+            --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
+            --dry-run=client -o yaml | kubectl apply -f -
+      env:
+        DB_PASSWORD: $(postgres-password)
 
     #########################################################
     # Database Schema Job - Jobs are immutable, so delete any previous
