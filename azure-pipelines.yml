@@ -370,21 +370,21 @@ stages:
     # `--dry-run=client -o yaml | kubectl apply -f -` makes this
     # create-or-update, so it is safe to run on every pipeline run.
     #########################################################
-    - task: AzureCLI@2
-      displayName: Create or Update Kubernetes Secret
-      inputs:
-        azureSubscription: $(azureServiceConnection)
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          kubectl create secret generic credpay-db \
-            --namespace $(k8sNamespace) \
-            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-            --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-            --dry-run=client -o yaml | kubectl apply -f -
-      env:
-        DB_PASSWORD: $(postgres-password)
+    # - task: AzureCLI@2
+    #   displayName: Create or Update Kubernetes Secret
+    #   inputs:
+    #     azureSubscription: $(azureServiceConnection)
+    #     scriptType: bash
+    #     scriptLocation: inlineScript
+    #     inlineScript: |
+    #       set -e
+    #       kubectl create secret generic credpay-db \
+    #         --namespace $(k8sNamespace) \
+    #         --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+    #         --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
+    #         --dry-run=client -o yaml | kubectl apply -f -
+    #   env:
+    #     DB_PASSWORD: $(postgres-password)
 
     #########################################################
     # Database Schema Job - Jobs are immutable, so delete any previous
